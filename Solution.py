@@ -48,17 +48,24 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                     continue
                 
                 print(f"Found Udemy link, clicking: {udemy_href}")
+                
+                # Track the current number of windows to smartly wait for the new tab
+                num_windows_before = len(driver.window_handles)
+                
                 # Use JavaScript click to bypass overlapping elements like ads or sticky headers
                 driver.execute_script("arguments[0].click();", udemy_link)
                 
-                # Wait for the page to load (and switch if Udemy opened in a new tab)
-                time.sleep(2)
+                # Dynamically wait for the new tab to open (instantly proceeds when ready)
+                WebDriverWait(driver, 10).until(EC.number_of_windows_to_be(num_windows_before + 1))
                 driver.switch_to.window(driver.window_handles[-1])
+                
+                # Ensure the Udemy page's DOM is completely loaded before searching
+                WebDriverWait(driver, 10).until(lambda d: d.execute_script("return document.readyState") == "complete")
                 
                 free_span = None
                 try:
                     # Search for the parent element containing both 'Current price' and 'Free' spans and click it
-                    free_span = WebDriverWait(driver, 6).until(EC.element_to_be_clickable((By.XPATH, "//*[span[text()='Current price'] and span[text()='Free']]")))
+                    free_span = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.XPATH, "//*[span[text()='Current price'] and span[text()='Free']]")))
                     print("Found 'Free' pricing element, clicking...")
                     driver.execute_script("arguments[0].click();", free_span)
                 except TimeoutException:
@@ -72,18 +79,18 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                 if free_span:
                     try:
                         # Search for span tag of 'Enroll now' within a button tag and click it
-                        enroll_span = WebDriverWait(driver, 6).until(EC.element_to_be_clickable((By.XPATH, "//button//span[text()='Enroll now']")))
+                        enroll_span = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button//span[text()='Enroll now']")))
                         print("Found 'Enroll now' span, clicking...")
                         driver.execute_script("arguments[0].click();", enroll_span)
                         
                         # Search for the second 'Enroll now' button on the redirect page and click it
-                        second_enroll_btn = WebDriverWait(driver, 6).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Enroll now')]")))
+                        second_enroll_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Enroll now')]")))
                         print("Found second 'Enroll now' button on checkout page, clicking...")
                         driver.execute_script("arguments[0].click();", second_enroll_btn)
                         
                         # Wait for the success page URL
                         print("Waiting for success page redirection...")
-                        WebDriverWait(driver, 6).until(EC.url_contains("https://www.udemy.com/cart/success/"))
+                        WebDriverWait(driver, 10).until(EC.url_contains("https://www.udemy.com/cart/success/"))
                         print("Successfully enrolled!")
                         
                         # Close the current tab 2 times (Udemy tab, then freecourse detail tab)
@@ -103,7 +110,6 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                 
             # Switch back to the original window to continue the loop
             driver.switch_to.window(original_window)
-            time.sleep(2) # Small pause before moving to the next element
 
 # Setup WebDriver
 options = webdriver.ChromeOptions()
@@ -142,12 +148,14 @@ try:
         process_course_elements(driver, course_elements, visited_links, original_window)
         
         try:
-            print("Clicking on 'Next' button...")
-            next_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[contains(text(), 'Next') or contains(text(), 'NEXT')]")))
+            print("Looking for the 'Next' page button...")
+            # Specifically target the button tag containing 'Next'
+            next_button = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Next')]")))
+            print("Clicking the 'Next' button...")
             driver.execute_script("arguments[0].click();", next_button)
             time.sleep(3) # Wait for the next page to load
         except TimeoutException:
-            print("'Next' button not found. Reached the last page.")
+            print("'Next' button not found or disabled. Reached the last page.")
             break
 
 finally:
