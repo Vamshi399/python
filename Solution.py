@@ -8,20 +8,31 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 
 def process_course_elements(driver, course_elements, visited_links, original_window):
     actions = ActionChains(driver)
     wait = WebDriverWait(driver, 40)
-    # Iterate through elements, hover, and check
+    
+    # Pre-extract hrefs to avoid StaleElementReferenceException if the DOM refreshes in the background
+    extracted_hrefs = []
     for elem in course_elements:
-        href = elem.get_attribute("href")
-        if not href:
+        try:
+            href = elem.get_attribute("href")
+            if href and href not in extracted_hrefs:
+                extracted_hrefs.append(href)
+        except StaleElementReferenceException:
             continue
             
-        # Hover the link
-        actions.move_to_element(elem).perform()
-        time.sleep(1)  # Short pause to mimic natural hover behavior
+    # Iterate through the extracted links instead of the raw WebElements
+    for href in extracted_hrefs:
+        try:
+            # Re-locate the element dynamically to hover it safely
+            elem = driver.find_element(By.XPATH, f"//a[@href='{href}']")
+            actions.move_to_element(elem).perform()
+            time.sleep(1)  # Short pause to mimic natural hover behavior
+        except Exception:
+            pass # If hover fails for any reason, safely ignore and continue
         
         # Check in the links_visited list
         if href in visited_links:
