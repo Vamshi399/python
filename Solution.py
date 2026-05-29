@@ -70,9 +70,22 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                 WebDriverWait(driver, 10).until(EC.number_of_windows_to_be(num_windows_before + 1))
                 driver.switch_to.window(driver.window_handles[-1])
                 
+                # Check for 'Go to course' button before the DOM is completely loaded
+                if driver.find_elements(By.XPATH, "//button//span[text()='Go to course']"):
+                    print("Already enrolled ('Go to course' found). Closing tabs twice.")
+                    with open(r"c:\code\udemy\links_visited.txt", "a") as f:
+                        f.write(href + "\n")
+                    driver.close()
+                    driver.switch_to.window(driver.window_handles[-1])
+                    driver.close()
+                    driver.switch_to.window(original_window)
+                    continue
+
                 # Ensure the Udemy page's DOM is completely loaded before searching
                 WebDriverWait(driver, 10).until(lambda d: d.execute_script("return document.readyState") == "complete")
                 
+                
+
                 free_span = None
                 try:
                     # Search for the parent element containing both 'Current price' and 'Free' spans and click it
@@ -80,39 +93,38 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                     print("Found 'Free' pricing element, clicking...")
                     driver.execute_script("arguments[0].click();", free_span)
                 except TimeoutException:
-                    print("'Free' span not present (course might not be free anymore). Closing tabs twice.")
+                    # Check for 'Go to course' button after the DOM is completely loaded
+                    if driver.find_elements(By.XPATH, "//button//span[text()='Go to course']"):
+                        print("Already enrolled ('Go to course' found). Closing tabs twice.")
+                        with open(r"c:\code\udemy\links_visited.txt", "a") as f:
+                            f.write(href + "\n")
+                    else:
+                        print("'Free' span not present (course might not be free anymore). Closing tabs twice.")
                     driver.close()
                     driver.switch_to.window(driver.window_handles[-1])
                     driver.close()
                     
                 if free_span:
-                    try:
-                        # Search for span tag of 'Enroll now' within a button tag and click it
-                        enroll_span = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button//span[text()='Enroll now']")))
-                        print("Found 'Enroll now' span, clicking...")
-                        driver.execute_script("arguments[0].click();", enroll_span)
-                        
-                        # Search for the second 'Enroll now' button on the redirect page and click it
-                        second_enroll_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Enroll now')]")))
-                        print("Found second 'Enroll now' button on checkout page, clicking...")
-                        driver.execute_script("arguments[0].click();", second_enroll_btn)
-                        
-                        # Wait for the success page URL
-                        print("Waiting for success page redirection...")
-                        WebDriverWait(driver, 10).until(EC.url_contains("https://www.udemy.com/cart/success/"))
-                        print("Successfully enrolled!")
-                        
-                        # Close the current tab 2 times (Udemy tab, then freecourse detail tab)
-                        driver.close()
-                        driver.switch_to.window(driver.window_handles[-1])
-                        driver.close()
-                    except TimeoutException:
-                        print("User already enrolled in this course. Closing tabs twice.")
-                        with open(r"c:\code\udemy\links_visited.txt", "a") as f:
-                            f.write(href + "\n")
-                        driver.close()
-                        driver.switch_to.window(driver.window_handles[-1])
-                        driver.close()
+                    # Search for span tag of 'Enroll now' within a button tag and click it
+                    enroll_span = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button//span[text()='Enroll now']")))
+                    print("Found 'Enroll now' span, clicking...")
+                    driver.execute_script("arguments[0].click();", enroll_span)
+                    
+                    # Search for the second 'Enroll now' button on the redirect page and click it
+                    second_enroll_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Enroll now')]")))
+                    print("Found second 'Enroll now' button on checkout page, clicking...")
+                    driver.execute_script("arguments[0].click();", second_enroll_btn)
+                    
+                    # Wait for the success page URL
+                    print("Waiting for success page redirection...")
+                    WebDriverWait(driver, 10).until(EC.url_contains("https://www.udemy.com/cart/success/"))
+                    print("Successfully enrolled!")
+                    
+                    # Close the current tab 2 times (Udemy tab, then freecourse detail tab)
+                    driver.close()
+                    driver.switch_to.window(driver.window_handles[-1])
+                    driver.close()
+
             except TimeoutException:
                 print(f"Udemy link not found or timed out on page: {href}")
                 
