@@ -81,8 +81,6 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                     driver.execute_script("arguments[0].click();", free_span)
                 except TimeoutException:
                     print("'Free' span not present (course might not be free anymore). Closing tabs twice.")
-                    with open(r"c:\code\udemy\links_visited.txt", "a") as f:
-                        f.write(href + "\n")
                     driver.close()
                     driver.switch_to.window(driver.window_handles[-1])
                     driver.close()
@@ -109,8 +107,7 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                         driver.switch_to.window(driver.window_handles[-1])
                         driver.close()
                     except TimeoutException:
-                        print("Enrollment process timed out or 'Enroll now' button not found.")
-                        print("Closing tabs twice.")
+                        print("User already enrolled in this course. Closing tabs twice.")
                         with open(r"c:\code\udemy\links_visited.txt", "a") as f:
                             f.write(href + "\n")
                         driver.close()
