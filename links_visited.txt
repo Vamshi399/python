@@ -437,3 +437,5 @@ https://freecourse.io/courses/c-modern-c-programming-language-made-easy
 https://freecourse.io/courses/vuejs-masterclass-build-interactive-web-apps-quickly
 https://freecourse.io/courses/flutter-for-web-mobile-build-fast-flexible-applications
 https://freecourse.io/courses/excel-data-insights-power-query-pivot-analysis-and-visuals
+https://freecourse.io/courses/microsoft-powerpoint-from-beginner-to-presentation-pro
+https://freecourse.io/courses/php-master-class-the-complete-php-developer-course
