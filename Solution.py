@@ -69,23 +69,10 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                 # Dynamically wait for the new tab to open (instantly proceeds when ready)
                 WebDriverWait(driver, 10).until(EC.number_of_windows_to_be(num_windows_before + 1))
                 driver.switch_to.window(driver.window_handles[-1])
-                
-                # Check for 'Go to course' button before the DOM is completely loaded
-                if driver.find_elements(By.XPATH, "//button//span[text()='Go to course']"):
-                    print("Already enrolled ('Go to course' found). Closing tabs twice.")
-                    with open(r"c:\code\udemy\links_visited.txt", "a") as f:
-                        f.write(href + "\n")
-                    driver.close()
-                    driver.switch_to.window(driver.window_handles[-1])
-                    driver.close()
-                    driver.switch_to.window(original_window)
-                    continue
 
                 # Ensure the Udemy page's DOM is completely loaded before searching
                 WebDriverWait(driver, 10).until(lambda d: d.execute_script("return document.readyState") == "complete")
                 
-                
-
                 free_span = None
                 try:
                     # Search for the parent element containing both 'Current price' and 'Free' spans and click it
@@ -98,11 +85,14 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                         print("Already enrolled ('Go to course' found). Closing tabs twice.")
                         with open(r"c:\code\udemy\links_visited.txt", "a") as f:
                             f.write(href + "\n")
+                        driver.close()
+                        driver.switch_to.window(driver.window_handles[-1])
+                        driver.close()
                     else:
                         print("'Free' span not present (course might not be free anymore). Closing tabs twice.")
-                    driver.close()
-                    driver.switch_to.window(driver.window_handles[-1])
-                    driver.close()
+                        driver.close()
+                        driver.switch_to.window(driver.window_handles[-1])
+                        driver.close()
                     
                 if free_span:
                     # Search for span tag of 'Enroll now' within a button tag and click it
@@ -148,7 +138,7 @@ try:
         print("links_visited.txt not found. Proceeding with an empty list.")
 
     # Navigate to the URL
-    driver.get("https://freecourse.io/courses")
+    # driver.get("https://freecourse.io/courses")
 
     # Store the original window handle so we can switch back to it later
     original_window = driver.current_window_handle
