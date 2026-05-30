@@ -76,7 +76,7 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                 free_span = None
                 try:
                     # Search for the parent element containing both 'Current price' and 'Free' spans and click it
-                    free_span = WebDriverWait(driver, 3).until(EC.element_to_be_clickable((By.XPATH, "//*[span[text()='Current price'] and span[text()='Free']]")))
+                    free_span = WebDriverWait(driver, 3.5).until(EC.element_to_be_clickable((By.XPATH, "//*[span[text()='Current price'] and span[text()='Free']]")))
                     print("Found 'Free' pricing element, clicking...")
                     driver.execute_script("arguments[0].click();", free_span)
                 except TimeoutException:
@@ -138,7 +138,7 @@ try:
         print("links_visited.txt not found. Proceeding with an empty list.")
 
     # Navigate to the URL
-    # driver.get("https://freecourse.io/courses")
+    driver.get("https://freecourse.io/courses")
 
     # Store the original window handle so we can switch back to it later
     original_window = driver.current_window_handle
