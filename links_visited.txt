@@ -456,3 +456,6 @@ https://freecourse.io/courses/flask-framework-complete-course-for-beginners
 https://freecourse.io/courses/ccna-200-301-the-complete-course-mock-test
 https://freecourse.io/courses/cfa-program-level-ii-mock-test
 https://freecourse.io/courses/ccsp-practice-exams-2026-pass-cloud-security
+https://freecourse.io/courses/ai-fundamentals-for-business
+https://freecourse.io/courses/ethics-bias-trust-in-ai
+https://freecourse.io/courses/full-digital-marketing-course-2025-ppc-seo-smm-gtm-ga4
