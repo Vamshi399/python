@@ -128,7 +128,7 @@ options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-def run_scraper(driver):
+try:
     # Load visited links into a list (using 'with' automatically closes the file after reading)
     visited_links = []
     try:
@@ -167,46 +167,6 @@ def run_scraper(driver):
         except TimeoutException:
             print("'Next' button not found or disabled. Reached the last page.")
             break
-
-def monitor_telegram(driver):
-    print("Navigating to Telegram Web...")
-    driver.get("https://web.telegram.org/a/#-1001101378903")
-    
-    print("Waiting for Telegram Web to load...")
-    
-    print("Monitoring for new messages...")
-    
-    last_message_count = 0
-    while True:
-        try:
-            # Flexible CSS Selector to count messages in either K or A versions of Telegram Web
-            messages = driver.find_elements(By.CSS_SELECTOR, "div.Message, div.message")
-            current_count = len(messages)
-            
-            if current_count > 0:
-                if last_message_count == 0:
-                    last_message_count = current_count
-                    print(f"Initially loaded {last_message_count} messages.")
-                elif current_count > last_message_count:
-                    print(f"New message detected! Count increased from {last_message_count} to {current_count}.")
-                    last_message_count = current_count
-                    
-                    telegram_window = driver.current_window_handle
-                    driver.execute_script("window.open('');")
-                    driver.switch_to.window(driver.window_handles[-1])
-                    
-                    run_scraper(driver)
-                    
-                    driver.close()
-                    driver.switch_to.window(telegram_window)
-                    print("Resumed monitoring Telegram...")
-                elif current_count < last_message_count:
-                    last_message_count = current_count
-        except Exception as e:
-            print(f"Error checking messages: {e}")
-
-try:
-    monitor_telegram(driver)
 
 finally:
     pass # Prevent Selenium from closing your existing browser when done
