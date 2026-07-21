@@ -75,51 +75,94 @@ def process_course_elements(driver, course_elements, visited_links, original_win
                 
                 free_span = None
                 try:
-                    # Search for the parent element containing both 'Current price' and 'Free' spans and click it
-                    free_span = WebDriverWait(driver, 3.5).until(EC.element_to_be_clickable((By.XPATH, "//*[span[text()='Current price'] and span[text()='Free']]")))
-                    print("Found 'Free' pricing element, clicking...")
-                    driver.execute_script("arguments[0].click();", free_span)
-                except TimeoutException:
-                    # Check for 'Go to course' button after the DOM is completely loaded
-                    if driver.find_elements(By.XPATH, "//button//span[text()='Go to course']"):
+                    if driver.find_elements(By.XPATH, "//button[contains(., 'Go to course') or contains(., 'Go to Course')]"):
                         print("Already enrolled ('Go to course' found). Closing tabs twice.")
-                        with open(r"c:\code\udemy\links_visited.txt", "a") as f:
-                            f.write(href + "\n")
-                        driver.close()
-                        driver.switch_to.window(driver.window_handles[-1])
-                        driver.close()
-                    else:
-                        print("'Free' span not present (course might not be free anymore). Closing tabs twice.")
-                        driver.close()
-                        driver.switch_to.window(driver.window_handles[-1])
-                        driver.close()
+                        try:
+                            with open(r"c:\code\udemy\links_visited.txt", "a") as f:
+                                f.write(href + "\n")
+                            driver.close()
+                            if len(driver.window_handles) > 1:
+                                driver.switch_to.window(driver.window_handles[-1])
+                                driver.close()
+                        
+                            # Switch back to the original window BEFORE continuing to the next iteration
+                            driver.switch_to.window(original_window)
+                            continue
+                        except Exception as e:
+                            print(f"Error saving visited link: {e}")
+                    # Search for the 'Buy individual course' button or the element containing both 'Current price' and 'Free' spans and click it
+                    free_span = WebDriverWait(driver, 3.5).until(EC.element_to_be_clickable((By.XPATH, "//button[.//span[text()='Buy individual course']] | //*[span[text()='Current price'] and span[text()='Free']]")))
+                    print("Found 'Free' pricing element, clicking...")
                     
+                    # Scroll into view to ensure it's on screen, preventing interception by sticky headers
+                    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", free_span)
+                    time.sleep(0.5)
+                    try:
+                        free_span.click() # Standard click simulates real user interaction (triggers mousedown/mouseup which React sometimes needs)
+                    except Exception:
+                        driver.execute_script("arguments[0].click();", free_span) # Fallback to JS click
+                    time.sleep(2) # Wait for the UI to update and reveal/activate the Enroll now button
+                except TimeoutException:
+                    print("'Free' span not present (course might not be free anymore). Closing tabs twice.")
+                    driver.close()
+                    if len(driver.window_handles) > 1:
+                        driver.switch_to.window(driver.window_handles[-1])
+                        driver.close()
+                
+                    # Switch back to the original window BEFORE continuing to the next iteration
+                    driver.switch_to.window(original_window)
+                    continue
+
                 if free_span:
-                    # Search for span tag of 'Enroll now' within a button tag and click it
-                    enroll_span = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button//span[text()='Enroll now']")))
-                    print("Found 'Enroll now' span, clicking...")
-                    driver.execute_script("arguments[0].click();", enroll_span)
-                    
-                    # Search for the second 'Enroll now' button on the redirect page and click it
-                    second_enroll_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Enroll now')]")))
-                    print("Found second 'Enroll now' button on checkout page, clicking...")
-                    driver.execute_script("arguments[0].click();", second_enroll_btn)
-                    
-                    # Wait for the success page URL
-                    print("Waiting for success page redirection...")
-                    WebDriverWait(driver, 10).until(EC.url_contains("https://www.udemy.com/cart/success/"))
-                    print("Successfully enrolled!")
-                    
-                    # Close the current tab 2 times (Udemy tab, then freecourse detail tab)
-                    driver.close()
-                    driver.switch_to.window(driver.window_handles[-1])
-                    driver.close()
+                    try:
+                        # Search for the 'Enroll now' button and click it
+                        enroll_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Enroll now')]")))
+                        print("Found 'Enroll now' button, clicking...")
+                        driver.execute_script("arguments[0].click();", enroll_btn)
+                        
+                        # Search for the second 'Enroll now' button on the redirect page and click it
+                        second_enroll_btn = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Enroll now')]")))
+                        print("Found second 'Enroll now' button on checkout page, clicking...")
+                        driver.execute_script("arguments[0].click();", second_enroll_btn)
+                        
+                        # Wait for the success page URL
+                        print("Waiting for success page redirection...")
+                        WebDriverWait(driver, 10).until(EC.url_contains("https://www.udemy.com/cart/success/"))
+                        print("Successfully enrolled!")
+                        
+                        # Close the current tab 2 times (Udemy tab, then freecourse detail tab)
+                        driver.close()
+                        driver.switch_to.window(driver.window_handles[-1])
+                        driver.close()
+                    except TimeoutException:
+                        print("Enrollment process timed out or 'Enroll now' button not found.")
+                        print("Closing tabs twice.")
+                        try:
+                            with open(r"c:\code\udemy\links_visited.txt", "a") as f:
+                                f.write(href + "\n")
+                        except Exception as e:
+                            print(f"Error saving visited link: {e}")
+                        driver.close()
+                        if len(driver.window_handles) > 1:
+                            driver.switch_to.window(driver.window_handles[-1])
+                            driver.close()
 
             except TimeoutException:
                 print(f"Udemy link not found or timed out on page: {href}")
+                # Clean up any extra tabs that were left open on timeout to prevent NoSuchWindowException
+                for handle in list(driver.window_handles):
+                    if handle != original_window:
+                        try:
+                            driver.switch_to.window(handle)
+                            driver.close()
+                        except Exception:
+                            pass
                 
             # Switch back to the original window to continue the loop
-            driver.switch_to.window(original_window)
+            try:
+                driver.switch_to.window(original_window)
+            except Exception:
+                pass
 
 # Setup WebDriver
 options = webdriver.ChromeOptions()
@@ -139,7 +182,7 @@ try:
 
     # Navigate to the URL
     driver.get("https://freecourse.io/courses")
-
+    # driver.get("https://freecourse.io/courses?page=26")
     # Store the original window handle so we can switch back to it later
     original_window = driver.current_window_handle
 
