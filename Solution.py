@@ -182,7 +182,7 @@ try:
 
     # Navigate to the URL
     driver.get("https://freecourse.io/courses")
-    # driver.get("https://freecourse.io/courses?page=26")
+    # driver.get("https://freecourse.io/courses?page=3")
     # Store the original window handle so we can switch back to it later
     original_window = driver.current_window_handle
 
